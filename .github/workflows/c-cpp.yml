@@ -1,0 +1,26 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: configure
+      run: cmake .
+    - name: install-seccomp
+      run: sudo apt install libseccomp-dev
+    - name: make
+      run: make
+    - name: upload-artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: fort
+        path: fort

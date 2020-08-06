@@ -15,5 +15,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: configure
       run: cmake .
+    - name: install-seccomp
+      run: apt install libseccomp-dev
     - name: make
       run: make

@@ -11,6 +11,15 @@ void ssc_result_parse_rusage(struct ssc_result *result, struct rusage *rusage) {
     result->memory = rusage->ru_maxrss;
 }
 
+void ssc_result_parse_rusage_in_us(struct ssc_result *result, struct rusage *rusage) {
+    result->user_time = (uint64_t) (rusage->ru_utime.tv_sec * 1000000 +
+                                    rusage->ru_utime.tv_usec);
+    result->sys_time = (uint64_t) (rusage->ru_stime.tv_sec * 1000000 +
+                                   rusage->ru_stime.tv_usec);
+    result->cpu_time = result->user_time + result->sys_time;
+    result->memory = rusage->ru_maxrss;
+}
+
 void output_result_to_third_fd(int fd, struct ssc_result result) {
     FILE *file = fdopen(fd, "w");
     fprintf(file,

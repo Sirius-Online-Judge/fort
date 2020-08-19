@@ -14,6 +14,7 @@ struct arguments {
     int uid;
     int gid;
     int fd;
+    int in_usec;
     int execve_argc;
     char *bin;
     char *stdout;

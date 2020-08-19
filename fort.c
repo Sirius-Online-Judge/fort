@@ -34,6 +34,7 @@ static struct argp_option options[] = {
         {"time-limit",   't', "SECOND", 0, "TimeLimit, in second"},
         {"memory-limit", 'm', "MiB",    0, "MemoryLimit, in MiB"},
         {"output-limit", 'a', "MiB",    0, "OutputLimit, in MiB"},
+        {"time-in-us",   's', 0,        0, "Output time in us"},
 
         {0,              0,   0,        0, "File Redirect"},
         {"stdout",       'o', "FILE"},
@@ -51,6 +52,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 't':
             arguments->time_limit = atoi(arg);
+            break;
+        case 's':
+            arguments->in_usec = 1;
             break;
         case 'm':
             arguments->memory_limit = atoi(arg);
@@ -107,6 +111,7 @@ int main(int argc, char *argv[]) {
     arguments.stdout = 0;
     arguments.pids_max = 0;
     arguments.fd = 1;
+    arguments.in_usec = 0;
     arguments.stderr = 0;
     arguments.gid = -1;
     arguments.uid = -1;
@@ -264,8 +269,11 @@ int main(int argc, char *argv[]) {
 
         gettimeofday(&end, NULL);
         result.real_time =
-                (uint64_t) (end.tv_sec * 1000 + end.tv_usec / 1000 -
-                            start.tv_sec * 1000 - start.tv_usec / 1000);
+                (uint64_t) arguments.in_usec ?
+                (end.tv_sec * 1000000 + end.tv_usec -
+                 start.tv_sec * 1000000 - start.tv_usec)
+                                             : (end.tv_sec * 1000 + end.tv_usec / 1000 -
+                                                start.tv_sec * 1000 - start.tv_usec / 1000);
         result.exit_code = WEXITSTATUS(status);
         result.signal = WTERMSIG(status);
         result.status = status;
@@ -285,15 +293,19 @@ int main(int argc, char *argv[]) {
                               &result.memory)) {
                 return SCE_CGRST;
             }
-            result.sys_time /= 1e6;
-            result.user_time /= 1e6;
+            if(!arguments.in_usec) {
+                result.sys_time /= 1e6;
+                result.user_time /= 1e6;
+            }
             result.memory >>= 10;
             result.cpu_time = result.sys_time + result.user_time;
             cleanup_cg(cg_cpu);
             cleanup_cg(cg_memory);
             cleanup_cg(cg_pids);
         } else {
-            ssc_result_parse_rusage(&result, &rusage);
+            if (arguments.in_usec)
+                ssc_result_parse_rusage_in_us(&result, &rusage);
+            else ssc_result_parse_rusage(&result, &rusage);
             result.cg_enabled = 0;
         }
 

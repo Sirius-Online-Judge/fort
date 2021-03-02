@@ -293,6 +293,8 @@ int main(int argc, char *argv[]) {
                               &result.memory)) {
                 return SCE_CGRST;
             }
+            result.sys_time /= 1e3;
+            result.user_time /= 1e3;
             if(!arguments.in_usec) {
                 result.sys_time /= 1e6;
                 result.user_time /= 1e6;
